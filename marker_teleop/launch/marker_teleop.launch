@@ -1,8 +1,10 @@
 <launch>
   <arg name="cmd_vel" default="marker_vel"/>
 
-  <node pkg="marker_teleop" type="marker_teleop_node" name="marker_teleop_node"
+  <node pkg="marker_teleop" type="marker_teleop_node" name="marker_teleop"
         output="screen">
     <remap from="cmd_vel" to="$(arg cmd_vel)"/>
+
+    <rosparam file="$(find marker_teleop)/config/marker_teleop.yaml" command="load"/>
   </node>
 </launch>

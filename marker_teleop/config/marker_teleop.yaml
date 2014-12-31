@@ -1,0 +1,9 @@
+link_name: base_footprint
+
+linear_scale : 1.0
+angular_scale: 1.0
+
+holonomic: false
+
+# marker mode {twist, pose, path}
+mode: pose
