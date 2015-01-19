@@ -1,0 +1,10 @@
+<launch>
+  <arg name="pose" default="pose"/>
+
+  <node pkg="marker_teleop" type="pose_marker_teleop_node" name="pose_marker_teleop"
+        output="screen">
+    <remap from="pose" to="$(arg pose)"/>
+
+    <rosparam file="$(find marker_teleop)/config/pose_marker_teleop.yaml" command="load"/>
+  </node>
+</launch>

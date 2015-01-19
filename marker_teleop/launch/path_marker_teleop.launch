@@ -1,0 +1,10 @@
+<launch>
+  <arg name="path" default="path"/>
+
+  <node pkg="marker_teleop" type="path_marker_teleop_node" name="path_marker_teleop"
+        output="screen">
+    <remap from="path" to="$(arg path)"/>
+
+    <rosparam file="$(find marker_teleop)/config/path_marker_teleop.yaml" command="load"/>
+  </node>
+</launch>

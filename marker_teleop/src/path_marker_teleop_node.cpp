@@ -5,8 +5,6 @@
 #include <ros/ros.h>
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
-#include <geometry_msgs/Twist.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Path.h>
 #include <tf/tf.h>
@@ -29,22 +27,8 @@ class MarkerTeleopServer
       ros::NodeHandle nh_priv("~");
 
       nh_priv.param("link_name", _link_name, _link_name);
-      nh_priv.param("linear_scale", _linear_scale, _linear_scale);
-      nh_priv.param("angular_scale", _angular_scale, _angular_scale);
-      nh_priv.param("holonomic", _holonomic, _holonomic);
 
-      std::string mode_str = modeToString(_mode);
-      nh_priv.param("mode", mode_str, mode_str);
-      _mode = modeFromString(mode_str);
-      if (_mode == MODE_UNKNOWN)
-      {
-        ROS_WARN_STREAM("Unknown mode '" << mode_str << "'! Using default mode '" << MODE_DEFAULT << "'");
-        _mode = MODE_DEFAULT;
-      }
-
-      _pub_cmd_vel = _nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-      _pub_pose    = _nh.advertise<geometry_msgs::PoseStamped>("pose", 1);
-      _pub_path    = _nh.advertise<nav_msgs::Path>("path", 1);
+      _pub = _nh.advertise<nav_msgs::Path>("path", 1);
 
       createInteractiveMarker();
       addMenu();
@@ -81,9 +65,7 @@ class MarkerTeleopServer
     static std::string modeToString(const Mode& mode);
 
     ros::NodeHandle _nh;
-    ros::Publisher _pub_cmd_vel;
-    ros::Publisher _pub_pose;
-    ros::Publisher _pub_path;
+    ros::Publisher _pub;
 
     interactive_markers::InteractiveMarkerServer _srv;
     interactive_markers::MenuHandler _menu;
@@ -106,42 +88,22 @@ class MarkerTeleopServer
 
 void MarkerTeleopServer::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
 {
-  if (_mode == MODE_POSE)
+  geometry_msgs::PoseStamped pose;
+  pose.header = feedback->header;
+  pose.pose   = feedback->pose;
+
+  if (feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::MOUSE_DOWN)
   {
-    geometry_msgs::PoseStamped pose;
-    pose.header = feedback->header;
-    pose.pose   = feedback->pose;
-
-    if (_mode == MODE_PATH)
-    {
-      if (feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::MOUSE_DOWN)
-      {
-        _path_msg.poses.clear();
-      }
-
-      _path_msg.header = feedback->header;
-      _path_msg.poses.push_back(pose);
-
-      _pub_path.publish(_path_msg);
-    }
-    else
-    {
-      _pub_pose.publish(pose);
-    }
+    _path_msg.poses.clear();
   }
-  else // if (_mode == MODE_PATH)
-  {
-    const double yaw = tf::getYaw(feedback->pose.orientation);
 
-    geometry_msgs::Twist vel;
-    vel.angular.z = _angular_scale * yaw;
-    vel.linear.x = _linear_scale * feedback->pose.position.x;
+  _path_msg.header = feedback->header;
+  _path_msg.poses.push_back(pose);
 
-    _pub_cmd_vel.publish(vel);
-  }
+  _pub.publish(_path_msg);
 
   // Make the marker snap back to the robot
-  _srv.setPose("marker_teleop", geometry_msgs::Pose());
+  _srv.setPose(_int_marker_name, geometry_msgs::Pose());
 
   _srv.applyChanges();
 }
@@ -199,28 +161,14 @@ void MarkerTeleopServer::createInteractiveMarker()
   _int_marker.controls.push_back(control);
   */
 
-  if (_mode == MODE_POSE)
-  {
-    _int_marker.description = _mode == MODE_PATH ? "Path" : "Position";
+  _int_marker.description = "Path";
 
-    control.orientation.w = 1;
-    control.orientation.x = 0;
-    control.orientation.y = 1;
-    control.orientation.z = 0;
-    control.name = "move_plane";
-    control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_PLANE;
-  }
-  else // if (_mode == MODE_TWIST)
-  {
-    _int_marker.description = "Twist";
-
-    control.orientation.w = 1;
-    control.orientation.x = 0;
-    control.orientation.y = 1;
-    control.orientation.z = 0;
-    control.name = "move_rotate";
-    control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
-  }
+  control.orientation.w = 1;
+  control.orientation.x = 0;
+  control.orientation.y = 1;
+  control.orientation.z = 0;
+  control.name = "move_plane";
+  control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_PLANE;
   _int_marker.controls.push_back(control);
 
   if (_holonomic)
@@ -308,7 +256,7 @@ std::string MarkerTeleopServer::modeToString(const Mode& mode)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "marker_teleop_node");
+  ros::init(argc, argv, "path_marker_teleop_node");
   MarkerTeleopServer mts;
 
   while (ros::ok())

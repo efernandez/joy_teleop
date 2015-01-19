@@ -24,10 +24,19 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(marker_teleop_node src/marker_teleop_node.cpp)
-target_link_libraries(marker_teleop_node ${catkin_LIBRARIES})
+add_executable(twist_marker_teleop_node src/twist_marker_teleop_node.cpp)
+target_link_libraries(twist_marker_teleop_node ${catkin_LIBRARIES})
 
-install(TARGETS marker_teleop_node
+add_executable(pose_marker_teleop_node src/pose_marker_teleop_node.cpp)
+target_link_libraries(pose_marker_teleop_node ${catkin_LIBRARIES})
+
+add_executable(path_marker_teleop_node src/path_marker_teleop_node.cpp)
+target_link_libraries(path_marker_teleop_node ${catkin_LIBRARIES})
+
+install(TARGETS
+    twist_marker_teleop_node
+    pose_marker_teleop_node
+    path_marker_teleop_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
